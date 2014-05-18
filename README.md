@@ -1,7 +1,7 @@
-haveapi-client-php
+vpsfree-client-php
 ==================
 
-haveapi-client-php is a PHP client for HaveAPI based APIs.
+vpsfree-client-php is a PHP client for vpsFree API.
 
 Requirements
 ------------
@@ -11,19 +11,19 @@ Requirements
 Usage
 -----
 
-First check out API documentation, see how it works and what resources/actions
+First check out [API documentation](https://api.vpsfree.cz), see how it works and what resources/actions
 are available.
 
 Include client:
 
 	<?php
-	include 'haveapi.php';
+	include 'vpsfree.php';
 
 `haveapi.php` includes Httpful from `vendor/`.
 
 Create client instance:
 
-	$api = new \HaveAPI\Client();
+	$api = new \vpsFree\Client();
 
 Authenticate with HTTP basic auth:
 
@@ -89,4 +89,4 @@ Action returns `Response` object. It has several helper methods.
 
 License
 -------
-haveapi-client-php is released under GNU/GPL.
+vpsfree-client-php is released under GNU/GPL.

@@ -1,4 +1,4 @@
 <?php
 
 include 'vendor/httpful.phar';
-include 'vpsadmin_client.php';
+include 'vpsfree_client.php';

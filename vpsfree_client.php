@@ -1,6 +1,6 @@
 <?php
 
-namespace HaveAPI;
+namespace vpsFree;
 
 class Action {
 	private $m_name;
@@ -229,7 +229,7 @@ class Client extends Resource {
 	private $user = null;
 	private $password;
 	
-	public function __construct($uri = 'http://localhost:4567') {
+	public function __construct($uri = 'https://api.vpsfree.cz') {
 		$this->uri = $uri;
 		
 		$description = \Httpful\Request::options($uri)
@@ -246,8 +246,6 @@ class Client extends Resource {
 	
 	public function call($action, $params = array()) {
 		$fn = strtolower($action->httpMethod());
-		
-		echo "execute {$action->httpMethod()} {$action->url()}\n<br>\n";
 		
 		$request = \Httpful\Request::$fn($this->uri."/".$action->url());
 		$request->sendsJson();
