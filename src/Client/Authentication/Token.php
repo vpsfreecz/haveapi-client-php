@@ -112,10 +112,17 @@ class Token extends Base {
 	 * Request a new token from the API.
 	 */
 	protected function requestToken() {
-		$input = [
-			'lifetime' => $this->opts['lifetime'] ?? 'renewable_auto',
-			'interval' => $this->opts['interval'] ?? 300,
-		];
+		$input = [];
+
+		if (isSet($this->opts['lifetime']))
+			$input['lifetime'] = $this->opts['lifetime'];
+		else
+			$input['lifetime'] = 'renewable_auto';
+		
+		if (isSet($this->opts['interval']))
+			$input['interval'] = $this->opts['interval'];
+		else
+			$input['interval'] = 300;
 
 		foreach ($this->getRequestCredentials() as $param) {
 			if (isSet($this->opts[$param]))
