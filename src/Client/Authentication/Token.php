@@ -207,8 +207,8 @@ class Token extends Base {
 	}
 
 	/**
-	 * Return names of parameters used as credentials for custom authentication
-	 * action
+	 * Return name and description of parameters used as credentials for custom
+	 * authentication action
 	 * @param string action
 	 * @return array
 	 */
@@ -218,7 +218,7 @@ class Token extends Base {
 
 		foreach ($params as $name => $desc) {
 			if ($name != 'token')
-				$ret[] = $name;
+				$ret[$name] = $desc;
 		}
 
 		return $ret;
@@ -228,8 +228,29 @@ class Token extends Base {
 	 * Get a new token if the current one expired.
 	 */
 	protected function checkValidity() {
-		if($this->validTo && $this->validTo < time() && isSet($this->opts['username']) && isSet($this->opts['password']))
+		if ($this->validTo && $this->validTo < time() && $this->hasRequestCredentials())
 			$this->requestToken();
+	}
+
+	/**
+	 * Check if all request credentials are provided
+	 * @return boolean
+	 */
+	protected function hasRequestCredentials() {
+		foreach ($this->getRequestCredentials() as $name) {
+			if (!isSet($this->opts[$name]))
+				return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Return the token resource
+	 * @return \HaveAPI\Client\Resource
+	 */
+	public function getResource() {
+		return $this->rs;
 	}
 
 	/**
@@ -244,5 +265,13 @@ class Token extends Base {
 	 */
 	public function getValidTo() {
 		return $this->validTo;
+	}
+
+	/**
+	 * Return true if the authentication process is complete
+	 * @return boolean
+	 */
+	public function isComplete() {
+		return $this->configured;
 	}
 }
