@@ -1,7 +1,7 @@
 {
     "name": "haveapi/client",
     "description": "A client for HaveAPI based APIs",
-    "version": "0.16.1",
+    "version": "0.16.2",
     "homepage": "https://github.com/vpsfreecz/haveapi-client-php",
     "license": "MIT",
     "authors": [
@@ -11,8 +11,8 @@
         }
     ],
     "require": {
-        "php": ">=7.4.0",
-        "nategood/httpful": "~0.3.2"
+        "php": ">=8.0.0",
+        "vpsfreecz/httpful": "~0.4.0"
     },
     "autoload": {
         "psr-4": {
