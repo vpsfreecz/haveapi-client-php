@@ -7,7 +7,7 @@ use HaveAPI\Client\Action;
  * A client for a HaveAPI based API.
  */
 class Client extends Client\Resource {
-	const VERSION = '0.16.2';
+	const VERSION = '0.16.3';
 	const PROTOCOL_VERSION = '2.0';
 
 	private $uri;
@@ -279,7 +279,7 @@ class Client extends Client\Resource {
 					$first = false;
 				} else $url .= '&';
 
-				$url .= $k.'='.urlencode($v);
+				$url .= $k.'='.(is_null($v) ? '' : urlencode($v));
 			}
 
 			$request->uri = $url;
