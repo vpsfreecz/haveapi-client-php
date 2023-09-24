@@ -34,11 +34,11 @@ Create a client instance:
 
 Authenticate with HTTP basic:
 
-	$api->authenticate('basic', ['username' => 'yourname', 'password' => 'password']);
+	$api->authenticate('basic', ['user' => 'yourname', 'password' => 'password']);
 
 Authenticate with token:
 
-	$api->authenticate('token', ['username' => 'yourname', 'password' => 'password']);
+	$api->authenticate('token', ['user' => 'yourname', 'password' => 'password']);
 
 When using the token authentication, it is usually necessary to save the token for later use:
 
