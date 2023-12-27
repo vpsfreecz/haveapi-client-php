@@ -7,7 +7,7 @@ use HaveAPI\Client\Action;
  * A client for a HaveAPI based API.
  */
 class Client extends Client\Resource {
-	const VERSION = '0.17.0';
+	const VERSION = '0.19.0';
 	const PROTOCOL_VERSION = '2.0';
 
 	private $uri;
@@ -46,6 +46,7 @@ class Client extends Client\Resource {
 
 		self::registerAuthProvider('none', 'HaveAPI\Client\Authentication\NoAuth');
 		self::registerAuthProvider('basic', 'HaveAPI\Client\Authentication\Basic');
+		self::registerAuthProvider('oauth2', 'HaveAPI\Client\Authentication\OAuth2');
 		self::registerAuthProvider('token', 'HaveAPI\Client\Authentication\Token');
 
 		$this->authProvider = new Client\Authentication\NoAuth($this, array(), array());
@@ -164,6 +165,20 @@ class Client extends Client\Resource {
 	}
 
 	/**
+	 * @return string
+	 */
+	public function getUri() {
+		return $this->uri;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getIdentity() {
+		return $this->identity;
+	}
+
+	/**
 	 * Invoke action $action with $params and interpret the response.
 	 * @param Action $action
 	 * @param array $params
@@ -236,7 +251,7 @@ class Client extends Client\Resource {
 	 * @param string $method HTTP method
 	 * @param string $url
 	 */
-	protected function getRequest($method, $url) {
+	public function getRequest($method, $url) {
 		$this->queryParams = array();
 
 		$request = \Httpful\Request::$method($url);
