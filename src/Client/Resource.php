@@ -7,201 +7,211 @@ use HaveAPI\Client;
 /**
  * A resource in the API.
  */
-class Resource implements \ArrayAccess {
+class Resource implements \ArrayAccess
+{
+    /**
+     * @var \stdClass
+     */
+    protected $description;
 
-	/**
-	 * @var \stdClass
-	 */
-	protected $description;
+    /**
+     * @var Client
+     */
+    protected $client;
 
-	/**
-	 * @var Client
-	 */
-	protected $client;
+    /**
+     * @var string
+     */
+    protected $name;
 
-	/**
-	 * @var string
-	 */
-	protected $name;
-
-	/**
-	 * @var array
-	 */
-	protected $args = array();
+    /**
+     * @var array
+     */
+    protected $args = [];
 
 
-	/**
-	 * @param Client $client
-	 * @param string $name resource name
-	 * @param \stdClass $description
-	 * @param array $args arguments passed from the parent
-	 */
-	public function __construct(Client $client, $name, $description, array $args) {
-		$this->client = $client;
-		$this->name = $name;
-		$this->description = $description;
-		$this->args = $args;
-	}
+    /**
+     * @param Client $client
+     * @param string $name resource name
+     * @param \stdClass $description
+     * @param array $args arguments passed from the parent
+     */
+    public function __construct(Client $client, $name, $description, array $args)
+    {
+        $this->client = $client;
+        $this->name = $name;
+        $this->description = $description;
+        $this->args = $args;
+    }
 
-	/**
-	 * Set client instance.
-	 * @param Client $client
-	 */
-	public function setApiClient(Client $client) {
-		$this->client = $client;
-	}
+    /**
+     * Set client instance.
+     * @param Client $client
+     */
+    public function setApiClient(Client $client)
+    {
+        $this->client = $client;
+    }
 
-	/**
-	 * Set an array of arguments.
-	 * @param array $args
-	 */
-	public function setArguments(array $args) {
-		;
-		$this->args = $args;
-	}
+    /**
+     * Set an array of arguments.
+     * @param array $args
+     */
+    public function setArguments(array $args)
+    {
+        ;
+        $this->args = $args;
+    }
 
-	/**
-	 * @return string resource name
-	 */
-	public function getName() {
-		return $this->name;
-	}
+    /**
+     * @return string resource name
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
 
-	/**
-	 * @return \stdClass description
-	 */
-	public function getDescription() {
-		return $this->description;
-	}
+    /**
+     * @return \stdClass description
+     */
+    public function getDescription()
+    {
+        return $this->description;
+    }
 
-	public function offsetExists($offset): bool {
-		return false;
-	}
+    public function offsetExists($offset): bool
+    {
+        return false;
+    }
 
-	/**
-	 * Return child resource or action.
-	 * @param $offset
-	 * @return mixed
-	 * @throws \Exception
-	 */
-	public function offsetGet($offset): mixed {
-		if (strpos($offset, '.') === false) {
-			return $this->findObject($offset);
-		} else {
-			return $this->findNestedObject($offset, $this->description);
-		}
-	}
+    /**
+     * Return child resource or action.
+     * @param $offset
+     * @return mixed
+     * @throws \Exception
+     */
+    public function offsetGet($offset): mixed
+    {
+        if (strpos($offset, '.') === false) {
+            return $this->findObject($offset);
+        } else {
+            return $this->findNestedObject($offset, $this->description);
+        }
+    }
 
-	public function offsetSet($offset, $value): void {
+    public function offsetSet($offset, $value): void {}
 
-	}
+    public function offsetUnset($offset): void {}
 
-	public function offsetUnset($offset): void {
+    public function __toString()
+    {
+        return $this->name;
+    }
 
-	}
+    /**
+     * Return child resource or action.
+     * @return mixed
+     */
+    public function __get($name)
+    {
+        return $this->findObject($name);
+    }
 
-	public function __toString() {
-		return $this->name;
-	}
+    /**
+     * Invoke an action and return its response or a resource with provided arguments.
+     * @param string $name
+     * @param mixed $arguments
+     * @return mixed
+     * @throws Exception\ObjectNotFound
+     */
+    public function __call($name, $arguments)
+    {
+        $obj = $this->findObject($name);
 
-	/**
-	 * Return child resource or action.
-	 * @return mixed
-	 */
-	public function __get($name) {
-		return $this->findObject($name);
-	}
+        if ($obj instanceof Action) {
+            return call_user_func_array([$obj, 'call'], $arguments);
+        }
 
-	/**
-	 * Invoke an action and return its response or a resource with provided arguments.
-	 * @param string $name
-	 * @param mixed $arguments
-	 * @return mixed
-	 * @throws Exception\ObjectNotFound
-	 */
-	public function __call($name, $arguments) {
-		$obj = $this->findObject($name);
+        if ($obj instanceof Resource) {
+            $obj->setArguments(array_merge($this->args, $arguments));
+            return $obj;
+        }
 
-		if ($obj instanceof Action)
-			return call_user_func_array(array($obj, 'call'), $arguments);
+        throw new Exception\ObjectNotFound("'$name' is not an action nor a resource.");
+    }
 
-		if ($obj instanceof Resource) {
-			$obj->setArguments(array_merge($this->args, $arguments));
-			return $obj;
-		}
+    /**
+     * Create a new resource object instance.
+     * @return ResourceInstance
+     */
+    public function newInstance()
+    {
+        return new ResourceInstance($this->client, $this->create, null);
+    }
 
-		throw new Exception\ObjectNotFound("'$name' is not an action nor a resource.");
-	}
+    /**
+     * Find an action or a resource with $name in $description.
+     * @param string name to be found
+     * @param \stdClass description to be searched in
+     * @return bool|Action|Resource
+     */
+    protected function findObject($name, $description = null)
+    {
+        $this->client->setup();
 
-	/**
-	 * Create a new resource object instance.
-	 * @return ResourceInstance
-	 */
-	public function newInstance() {
-		return new ResourceInstance($this->client, $this->create, null);
-	}
+        if (!$description) {
+            $description = $this->description;
+        }
 
-	/**
-	 * Find an action or a resource with $name in $description.
-	 * @param string name to be found
-	 * @param \stdClass description to be searched in
-	 * @return bool|Action|Resource
-	 */
-	protected function findObject($name, $description = null) {
-		$this->client->setup();
+        if (isset($description->actions)) {
+            foreach ($description->actions as $searched_name => $desc) {
+                if ($searched_name == $name || in_array($name, $desc->aliases)) {
+                    return new Action($this->client, $this, $searched_name, $description->actions->$searched_name, $this->args);
+                }
+            }
+        }
 
-		if (!$description) {
-			$description = $this->description;
-		}
+        if (array_key_exists($name, (array)$description->resources)) {
+            return new Resource($this->client, $name, $description->resources->$name, $this->args);
+        }
 
-		if (isSet($description->actions)) {
-			foreach ($description->actions as $searched_name => $desc) {
-				if ($searched_name == $name || in_array($name, $desc->aliases)) {
-					return new Action($this->client, $this, $searched_name, $description->actions->$searched_name, $this->args);
-				}
-			}
-		}
+        return false;
+    }
 
-		if (array_key_exists($name, (array)$description->resources)) {
-			return new Resource($this->client, $name, $description->resources->$name, $this->args);
-		}
+    /**
+     * Find and return an action or a resource which may be nested (names separated by dot).
+     * Used for array access method.
+     * @param string $path
+     * @param $description
+     * @return mixed
+     * @throws \Exception
+     */
+    protected function findNestedObject($path, $description)
+    {
+        $parts = explode('.', $path);
+        $ask = $this;
+        $len = count($parts);
 
-		return false;
-	}
+        for ($i = 0; $i < $len; $i++) {
+            $name = $parts[$i];
 
-	/**
-	 * Find and return an action or a resource which may be nested (names separated by dot).
-	 * Used for array access method.
-	 * @param string $path
-	 * @param $description
-	 * @return mixed
-	 * @throws \Exception
-	 */
-	protected function findNestedObject($path, $description) {
-		$parts = explode('.', $path);
-		$ask = $this;
-		$len = count($parts);
+            $obj = $ask->findObject($name, $description);
 
-		for ($i = 0; $i < $len; $i++) {
-			$name = $parts[$i];
+            if ($obj instanceof Resource) {
+                $ask = $obj;
+                $description = null;
 
-			$obj = $ask->findObject($name, $description);
+            } elseif ($obj === null) {
+                throw new \Exception("Resource or action '$name' not found.");
 
-			if ($obj instanceof Resource) {
-				$ask = $obj;
-				$description = null;
+            } elseif ($obj instanceof Action && $i < $len - 1) {
+                throw new \Exception("Found action '$name' but path does not end here.");
 
-			} else if ($obj === null) {
-				throw new \Exception("Resource or action '$name' not found.");
+            } else {
+                return $obj;
+            }
+        }
 
-			} else if ($obj instanceof Action && $i < $len - 1) {
-				throw new \Exception("Found action '$name' but path does not end here.");
-
-			} else {
-				return $obj;
-			}
-		}
-
-		return $ask;
-	}
+        return $ask;
+    }
 }
