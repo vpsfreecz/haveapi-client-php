@@ -65,13 +65,17 @@ class OAuth2 extends Base
 
     /**
      * Redirect the user to the authorization endpoint to request authorization code
+     * @param array $queryParams custom query parameters
      */
-    public function requestAuthorizationCode()
+    public function requestAuthorizationCode($queryParams = [])
     {
         $authorizationUrl = $this->genericProvider->getAuthorizationUrl();
 
         $_SESSION['oauth2state'] = $this->genericProvider->getState();
         $_SESSION['oauth2pkceCode'] = $this->genericProvider->getPkceCode();
+
+        foreach ($queryParams as $k => $v)
+            $authorizationUrl .= '&'.urlencode($k).'='.urlencode($v);
 
         header('Accept: text/html');
         header('Location: ' . $authorizationUrl);
@@ -117,9 +121,34 @@ class OAuth2 extends Base
      */
     public function logout()
     {
+        $this->revokeAccessToken();
+    }
+
+    /*
+     * Revoke the access token
+     * @param array $params additional parameters to be sent to the server
+     */
+    public function revokeAccessToken($params = [])
+    {
+        $this->revokeToken(array_merge($params, ['token' => $this->accessToken->getToken()]));
+    }
+
+    /*
+     * Send request to token revocation endpoint
+     * @param array $params
+     */
+    public function revokeToken($params)
+    {
         $request = $this->client->getRequest('post', $this->description->revoke_url);
         $request->sendsForm();
-        $request->body("token=" . $this->accessToken->getToken());
+
+        $encodedParams = [];
+
+        foreach ($params as $k => $v) {
+            $encodedParams[] = $k."=".urlencode($v);
+        }
+
+        $request->body(implode('&', $encodedParams));
         $request->send();
     }
 
