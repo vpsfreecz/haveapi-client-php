@@ -9,7 +9,7 @@ use HaveAPI\Client\Action;
  */
 class Client extends Client\Resource
 {
-    public const VERSION = '0.27.0';
+    public const VERSION = '0.27.1';
     public const PROTOCOL_VERSION = '2.0';
 
     private $uri;
@@ -481,6 +481,10 @@ class Client extends Client\Resource
             }
 
             if ($value === null) {
+                if (($descParamsArr[$name]->type ?? null) === 'Resource') {
+                    continue;
+                }
+
                 unset($params[$name]);
                 continue;
             }
