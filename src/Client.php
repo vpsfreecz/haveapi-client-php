@@ -9,7 +9,7 @@ use HaveAPI\Client\Action;
  */
 class Client extends Client\Resource
 {
-    public const VERSION = '0.27.3';
+    public const VERSION = '0.28.0';
     public const PROTOCOL_VERSION = '2.0';
 
     private $uri;
@@ -196,6 +196,74 @@ class Client extends Client\Resource
     }
 
     /**
+     * Build an API action URL from a description-provided path.
+     */
+    public function buildActionUrl($path)
+    {
+        $path = $this->validateDescriptionUrlString($path, 'action path');
+
+        if ($path[0] !== '/' || (isset($path[1]) && $path[1] === '/')) {
+            throw new Client\Exception\ProtocolError(
+                'Invalid action path: expected an API-root-relative path'
+            );
+        }
+
+        $url = $this->uri . $path;
+        $this->assertSameOrigin($url, 'action path');
+
+        return $url;
+    }
+
+    /**
+     * Resolve and validate a URL learned from the API description.
+     */
+    public function resolveDescriptionUrl($url, $label)
+    {
+        $url = $this->validateDescriptionUrlString($url, $label);
+        $parts = $this->parseDescriptionUrl($url, $label);
+        $hasScheme = array_key_exists('scheme', $parts);
+        $hasHost = array_key_exists('host', $parts);
+
+        if ($hasScheme || $hasHost) {
+            if (!$hasScheme || !$hasHost) {
+                throw new Client\Exception\ProtocolError(
+                    "Invalid $label: expected an absolute same-origin URL or a relative URL"
+                );
+            }
+
+            if (array_key_exists('user', $parts) || array_key_exists('pass', $parts)) {
+                throw new Client\Exception\ProtocolError(
+                    "Invalid $label: userinfo is not allowed"
+                );
+            }
+
+            $this->assertSameOrigin($url, $label);
+
+            return $url;
+        }
+
+        if ($url[0] === '/') {
+            if (isset($url[1]) && $url[1] === '/') {
+                throw new Client\Exception\ProtocolError(
+                    "Invalid $label: URL authority is not allowed"
+                );
+            }
+
+            $resolved = $this->uri . $url;
+
+        } elseif ($url[0] === '?') {
+            $resolved = $this->uri . $url;
+
+        } else {
+            $resolved = $this->uri . '/' . $url;
+        }
+
+        $this->assertSameOrigin($resolved, $label);
+
+        return $resolved;
+    }
+
+    /**
      * @return string
      */
     public function getIdentity()
@@ -245,7 +313,7 @@ class Client extends Client\Resource
 
         // 		echo "execute {$action->httpMethod()} {$action->path()}\n<br>\n";
 
-        $request = $this->getRequest($fn, $this->uri . $action->path());
+        $request = $this->getRequest($fn, $this->buildActionUrl($action->path()));
         $res = [];
 
         if (is_array($params) && array_key_exists('meta', $params)) {
@@ -313,20 +381,39 @@ class Client extends Client\Resource
      */
     public function getClientIp()
     {
-        if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ips = array_values(array_filter(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])));
+        if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && is_scalar($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ips = array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string) $_SERVER['HTTP_X_FORWARDED_FOR'])
+            )));
 
-            return end($ips);
+            $ip = end($ips);
 
-        } elseif (isset($_SERVER['REMOTE_ADDR'])) {
-            return $_SERVER["REMOTE_ADDR"];
+            if ($this->isClientIp($ip)) {
+                return $ip;
+            }
+        }
 
-        } elseif (isset($_SERVER['HTTP_CLIENT_IP'])) {
-            return $_SERVER["HTTP_CLIENT_IP"];
+        if (isset($_SERVER['REMOTE_ADDR']) && $this->isClientIp($_SERVER['REMOTE_ADDR'])) {
+            return trim((string) $_SERVER['REMOTE_ADDR']);
+        }
 
-        } else {
+        if (isset($_SERVER['HTTP_CLIENT_IP']) && $this->isClientIp($_SERVER['HTTP_CLIENT_IP'])) {
+            return trim((string) $_SERVER['HTTP_CLIENT_IP']);
+        }
+
+        return false;
+    }
+
+    private function isClientIp($ip): bool
+    {
+        if (!is_scalar($ip)) {
             return false;
         }
+
+        $ip = trim((string) $ip);
+
+        return $ip !== '' && filter_var($ip, FILTER_VALIDATE_IP) !== false;
     }
 
     public function verifySsl(): bool
@@ -373,7 +460,7 @@ class Client extends Client\Resource
                     $v = $v ? 'true' : 'false';
                 }
 
-                $url .= $k . '=' . (is_null($v) ? '' : urlencode($v));
+                $url .= urlencode((string) $k) . '=' . (is_null($v) ? '' : urlencode((string) $v));
             }
 
             $request->uri = $url;
@@ -513,6 +600,82 @@ class Client extends Client\Resource
         }
 
         return $params;
+    }
+
+    private function validateDescriptionUrlString($value, $label)
+    {
+        if (!is_string($value) || $value === '') {
+            throw new Client\Exception\ProtocolError("Invalid $label: expected a non-empty string");
+        }
+
+        if (preg_match('/[\x00-\x20\x7f]/', $value)) {
+            throw new Client\Exception\ProtocolError("Invalid $label: whitespace is not allowed");
+        }
+
+        if (strpos($value, '\\') !== false) {
+            throw new Client\Exception\ProtocolError("Invalid $label: backslashes are not allowed");
+        }
+
+        return $value;
+    }
+
+    private function parseDescriptionUrl($url, $label)
+    {
+        $parts = parse_url($url);
+
+        if ($parts === false) {
+            throw new Client\Exception\ProtocolError("Invalid $label: malformed URL");
+        }
+
+        return $parts;
+    }
+
+    private function assertSameOrigin($url, $label)
+    {
+        $base = $this->parseOrigin($this->uri, 'configured API URI');
+        $candidate = $this->parseOrigin($url, $label);
+
+        if ($candidate['scheme'] !== $base['scheme']
+            || $candidate['host'] !== $base['host']
+            || $candidate['port'] !== $base['port']) {
+            throw new Client\Exception\ProtocolError(
+                "Invalid $label: URL must use the configured API origin"
+            );
+        }
+    }
+
+    private function parseOrigin($url, $label)
+    {
+        $parts = $this->parseDescriptionUrl($url, $label);
+
+        if (!isset($parts['scheme']) || !isset($parts['host'])) {
+            throw new Client\Exception\ProtocolError("Invalid $label: missing URL origin");
+        }
+
+        return [
+            'scheme' => strtolower($parts['scheme']),
+            'host' => strtolower($parts['host']),
+            'port' => $this->originPort($parts),
+        ];
+    }
+
+    private function originPort(array $parts)
+    {
+        if (isset($parts['port'])) {
+            return (int) $parts['port'];
+        }
+
+        $scheme = strtolower($parts['scheme'] ?? '');
+
+        if ($scheme === 'http') {
+            return 80;
+        }
+
+        if ($scheme === 'https') {
+            return 443;
+        }
+
+        return null;
     }
 
     private function coerceTypedValue(string $type, $raw)

@@ -21,10 +21,10 @@ class OAuth2 extends Base
 
     private $accessToken;
 
+    private $revokeUrl;
+
     public function setup()
     {
-        $apiUri = $this->client->getUri();
-
         if (isset($this->opts['client_id'])) {
             $headers = [
                 'User-Agent' => $this->client->getIdentity(),
@@ -46,8 +46,8 @@ class OAuth2 extends Base
                     'clientId' => $this->opts['client_id'],
                     'clientSecret' => $this->opts['client_secret'],
                     'redirectUri' => $this->opts['redirect_uri'],
-                    'urlAuthorize' => $this->description->authorize_url,
-                    'urlAccessToken' => $this->description->token_url,
+                    'urlAuthorize' => $this->oauth2EndpointUrl('authorize_url'),
+                    'urlAccessToken' => $this->oauth2EndpointUrl('token_url'),
                     'urlResourceOwnerDetails' => 'ENOTSUPPORTED',
                     'pkceMethod' => \League\OAuth2\Client\Provider\GenericProvider::PKCE_METHOD_S256,
                     'scopes' => $this->opts['scope'],
@@ -89,22 +89,27 @@ class OAuth2 extends Base
      */
     public function requestAccessToken()
     {
-        if (!isset($_GET['state']) || $_GET['state'] != $_SESSION['oauth2state']) {
-            throw new \HaveAPI\Client\Exception\AuthenticationFailed('Invalid OAuth2 state');
-        }
+        try {
+            if (
+                !isset($_GET['state'], $_SESSION['oauth2state'])
+                || !is_string($_GET['state'])
+                || !is_string($_SESSION['oauth2state'])
+                || !hash_equals($_SESSION['oauth2state'], $_GET['state'])
+            ) {
+                throw new \HaveAPI\Client\Exception\AuthenticationFailed('Invalid OAuth2 state');
+            }
 
-        $this->genericProvider->setPkceCode($_SESSION['oauth2pkceCode']);
+            if (!isset($_SESSION['oauth2pkceCode']) || !is_string($_SESSION['oauth2pkceCode'])) {
+                throw new \HaveAPI\Client\Exception\AuthenticationFailed('Invalid OAuth2 PKCE verifier');
+            }
 
-        $this->accessToken = $this->genericProvider->getAccessToken('authorization_code', [
-            'code' => $_GET['code'],
-        ]);
+            $this->genericProvider->setPkceCode($_SESSION['oauth2pkceCode']);
 
-        if (isset($_SESSION['oauth2state'])) {
-            unset($_SESSION['oauth2state']);
-        }
-
-        if (isset($_SESSION['oauth2pkceCode'])) {
-            unset($_SESSION['oauth2pkceCode']);
+            $this->accessToken = $this->genericProvider->getAccessToken('authorization_code', [
+                'code' => $_GET['code'],
+            ]);
+        } finally {
+            $this->clearOAuth2Session();
         }
     }
 
@@ -141,17 +146,51 @@ class OAuth2 extends Base
      */
     public function revokeToken($params)
     {
-        $request = $this->client->getRequest('post', $this->description->revoke_url);
+        $request = $this->client->getRequest('post', $this->revokeEndpointUrl());
         $request->sendsForm();
 
         $encodedParams = [];
 
         foreach ($params as $k => $v) {
-            $encodedParams[] = $k . "=" . urlencode($v);
+            $encodedParams[] = urlencode((string) $k) . "=" . urlencode((string) $v);
         }
 
         $request->body(implode('&', $encodedParams));
         $request->send();
+    }
+
+    private function revokeEndpointUrl()
+    {
+        if (!$this->revokeUrl) {
+            $this->revokeUrl = $this->oauth2EndpointUrl('revoke_url');
+        }
+
+        return $this->revokeUrl;
+    }
+
+    private function oauth2EndpointUrl($name)
+    {
+        if (!isset($this->description->$name)) {
+            throw new \HaveAPI\Client\Exception\ProtocolError(
+                "Invalid OAuth2 $name: missing URL"
+            );
+        }
+
+        return $this->client->resolveDescriptionUrl(
+            $this->description->$name,
+            "OAuth2 $name"
+        );
+    }
+
+    private function clearOAuth2Session()
+    {
+        if (isset($_SESSION['oauth2state'])) {
+            unset($_SESSION['oauth2state']);
+        }
+
+        if (isset($_SESSION['oauth2pkceCode'])) {
+            unset($_SESSION['oauth2pkceCode']);
+        }
     }
 
     /**
