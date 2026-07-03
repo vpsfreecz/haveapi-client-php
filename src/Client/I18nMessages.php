@@ -1,0 +1,97 @@
+<?php
+
+// This file is generated from i18n/haveapi.yml.
+// Do not edit it manually; manual changes will be overwritten.
+// Update i18n/haveapi.yml and run bundle exec rake i18n:update.
+
+namespace HaveAPI\Client;
+
+final class I18nMessages
+{
+    public const MESSAGES = [
+        'en' => [
+            'authentication' => [
+                'callback_failed' => '%{callback} failed: %{error}',
+                'callback_invalid_return' => 'callback has to return an array or \'stop\'',
+                'callback_required' => 'Implement callback %{callback}',
+                'invalid_credentials' => 'invalid credentials',
+                'invalid_oauth2_pkce_verifier' => 'Invalid OAuth2 PKCE verifier',
+                'invalid_oauth2_state' => 'Invalid OAuth2 state',
+                'mfa_required' => 'implement multi-factor authentication',
+                'multistep_callback_required' => 'add callback to handle multi-step authentication',
+                'oauth2_access_token_required' => 'Option access_token must be provided',
+                'oauth2_not_configured' => 'OAuth2 authentication is not configured',
+                'oauth2_revoke_failed' => 'Unable to revoke access token, HTTP %{status}',
+                'token_request_failed' => 'Unable to request token: %{message}',
+                'token_revoke_failed' => 'Unable to revoke token: %{message}',
+                'token_step_failed' => 'Failed at authentication step \'%{action}\': %{message}',
+                'unsupported_auth_action' => 'Unsupported authentication action \'%{action}\'',
+            ],
+            'errors' => [
+                'access_forbidden' => 'Access forbidden. Bad user name or password? Not authorized?',
+                'action_failed' => '%{action} failed: %{message}',
+                'fatal_api_error' => 'Fatal API error: %{error}',
+                'input_parameters_not_valid' => 'input parameters not valid',
+                'input_parameters_not_valid_for_action' => 'Input parameters not valid for action \'%{action}\'',
+                'invalid_input_parameters' => 'invalid input parameters',
+                'uncancelable_action' => 'Action state #%{id} cannot be cancelled',
+                'unresolved_arguments' => 'Unable to execute action \'%{action}\': unresolved arguments',
+            ],
+            'validation' => [
+                'cannot_be_null' => 'cannot be null',
+                'invalid_boolean' => 'not a valid boolean',
+                'invalid_datetime' => 'not in ISO 8601 format',
+                'invalid_float' => 'not a valid float',
+                'invalid_input_layout' => 'invalid input layout',
+                'invalid_integer' => 'not a valid integer',
+                'invalid_resource_id' => 'not a valid resource id',
+                'invalid_string' => 'not a valid string',
+                'required_parameter_missing' => 'required parameter missing',
+                'validation_failed' => 'validation failed',
+                'validation_failed_with_errors' => 'validation failed: %{errors}',
+            ],
+        ],
+        'cs' => [
+            'authentication' => [
+                'callback_failed' => '%{callback} selhal: %{error}',
+                'callback_invalid_return' => 'callback musí vrátit pole nebo \'stop\'',
+                'callback_required' => 'Implementujte callback %{callback}',
+                'invalid_credentials' => 'neplatné přihlašovací údaje',
+                'invalid_oauth2_pkce_verifier' => 'Neplatný OAuth2 PKCE verifier',
+                'invalid_oauth2_state' => 'Neplatný OAuth2 state',
+                'mfa_required' => 'implementujte vícefaktorové ověření',
+                'multistep_callback_required' => 'přidejte callback pro zpracování vícefázového ověření',
+                'oauth2_access_token_required' => 'Volba access_token musí být zadána',
+                'oauth2_not_configured' => 'OAuth2 ověření není nastaveno',
+                'oauth2_revoke_failed' => 'Přístupový token nelze zrušit, HTTP %{status}',
+                'token_request_failed' => 'Token nelze vyžádat: %{message}',
+                'token_revoke_failed' => 'Token nelze zrušit: %{message}',
+                'token_step_failed' => 'Krok ověření \'%{action}\' selhal: %{message}',
+                'unsupported_auth_action' => 'Nepodporovaná ověřovací akce \'%{action}\'',
+            ],
+            'errors' => [
+                'access_forbidden' => 'Přístup odepřen. Chybné uživatelské jméno nebo heslo? Nejste oprávněni?',
+                'action_failed' => '%{action} selhala: %{message}',
+                'fatal_api_error' => 'Fatální chyba API: %{error}',
+                'input_parameters_not_valid' => 'vstupní parametry nejsou platné',
+                'input_parameters_not_valid_for_action' => 'Vstupní parametry pro akci \'%{action}\' nejsou platné',
+                'invalid_input_parameters' => 'neplatné vstupní parametry',
+                'uncancelable_action' => 'Stav akce #%{id} nelze zrušit',
+                'unresolved_arguments' => 'Akci \'%{action}\' nelze spustit: chybí argumenty',
+            ],
+            'validation' => [
+                'cannot_be_null' => 'nesmí být null',
+                'invalid_boolean' => 'neplatná pravdivostní hodnota',
+                'invalid_datetime' => 'není ve formátu ISO 8601',
+                'invalid_float' => 'neplatné desetinné číslo',
+                'invalid_input_layout' => 'neplatná struktura vstupu',
+                'invalid_integer' => 'neplatné celé číslo',
+                'invalid_resource_id' => 'neplatné ID prostředku',
+                'invalid_string' => 'neplatný řetězec',
+                'required_parameter_missing' => 'povinný parametr chybí',
+                'validation_failed' => 'validace selhala',
+                'validation_failed_with_errors' => 'validace selhala: %{errors}',
+            ],
+        ],
+    ];
+}
